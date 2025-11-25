@@ -1,0 +1,201 @@
+---
+title: "Analisis3"
+output:
+  html_document: default
+  pdf_document: default
+date: "2025-11-21"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Análisis Exploratorio
+
+```{r}
+library(readxl)
+
+PBI_LPI <- read_excel("PBI_LPI.xls")
+PBI_LPI
+plot (PBI_LPI)
+```
+
+
+```{r}
+
+library(car)
+PBI_LPI_1 <- PBI_LPI[ ,c(2,3,4,5,6,7,8,9,10,11,12,13,14)]
+PBI_LPI_1
+
+```
+
+```{r}
+scatterplotMatrix(PBI_LPI_1)
+```
+
+```{r}
+
+library(corrplot)
+
+M <- cor(PBI_LPI_1)
+corrplot(M)
+```
+
+
+```{r}
+library(psych)
+
+corPlot(PBI_LPI_1)
+```
+## Componentes
+
+```{r}
+PC1 <- princomp(PBI_LPI_1)
+PC1
+plot(PC1)
+```
+
+
+
+```{r}
+summary(PC1)
+```
+
+```{r}
+biplot(PC1)
+```
+
+```{r}
+acp2 <-PC1$scores[ ,1:2]
+plot(acp2)
+```
+
+## Clusters
+
+
+```{r}
+library(cluster)
+
+agp3 = agnes(acp2,method="average")
+plot(agp3)
+```
+
+```{r}
+agpcut <- cutree(agp3,3)
+par(mfrow=c(1,1))
+plot(acp2,col=agpcut)
+```
+
+## Clusters Clara
+
+```{r}
+plot(clara(PBI_LPI_1,6))
+```
+
+```{r}
+modelo <- clara(PBI_LPI_1, k = 6)
+modelo$clustering
+```
+
+```{r}
+clusters <- split(1:nrow(PBI_LPI_1), modelo$clustering)
+clusters
+```
+
+```{r}
+PBI_LPI_cluster<- PBI_LPI
+PBI_LPI_cluster$cluster <- modelo$clustering
+PBI_LPI_cluster
+```
+
+```{r}
+
+library(openxlsx)
+
+write.xlsx(PBI_LPI_cluster, file = "PBI_LPI_cluster")
+
+```
+
+
+## RED NEURONAL
+
+```{r}
+library(neuralnet)  # regression
+
+library(nnet) # classification 
+
+library(NeuralNetTools)
+
+library(plyr)
+```
+
+
+```{r}
+normalize<-function(x){
+  return ( (x-min(x))/(max(x)-min(x)))
+}
+
+PBI_LPI_norm<-as.data.frame(lapply(PBI_LPI_1,FUN=normalize))
+summary(PBI_LPI_norm)
+
+```
+
+```{r}
+indice <- sample(2, nrow(PBI_LPI_norm), replace = TRUE, prob = c(0.7,0.3))
+PBI_LPI_train <- PBI_LPI_1[indice==1,]
+PBI_LPI_test  <- PBI_LPI_1[indice==2,]
+```
+
+
+```{r}
+library(neuralnet)
+
+
+PBI_LPI_model <- neuralnet(LPI ~ Agr + Ind + Comercio + Exp_Mer + Exp_ByS + Exp_Comb + Exp_MM + Prod_oil + RRNN + Tierras_Agr + Exp_H_Tech , data = PBI_LPI_train)
+
+str(PBI_LPI_model)
+
+```
+
+```{r}
+
+plot(PBI_LPI_model, rep = "best")
+
+```
+
+
+```{r}
+model_results <- compute(PBI_LPI_model,PBI_LPI_test[1:13])
+predicted_LPI <- model_results$net.result
+```
+
+```{r}
+cor(predicted_LPI,PBI_LPI_test$LPI)
+
+```
+
+```{r}
+predicted_LPI
+PBI_LPI_test$LPI
+```
+
+
+## Mejorar el modelo
+
+```{r}
+PBI_LPI_model2 <- neuralnet(LPI ~ Agr + Ind + Comercio + Exp_Mer + Exp_ByS + Exp_Comb + Exp_MM + Prod_oil + RRNN + Tierras_Agr + Exp_H_Tech , data = PBI_LPI_train, hidden = c(2,4))
+
+plot(PBI_LPI_model2 ,rep = "best")
+```
+
+```{r}
+model_results2 <- compute(PBI_LPI_model2,PBI_LPI_test[1:13])
+predicted_LPI2 <- model_results2$net.result
+cor(predicted_LPI2,PBI_LPI_test$LPI)
+```
+```{r}
+predicted_LPI2
+PBI_LPI_test$LPI
+```
+
+
