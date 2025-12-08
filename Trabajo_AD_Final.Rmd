@@ -1,0 +1,709 @@
+---
+title: Comparación de modelos predictivos de indicadores de rendimiento
+  logístico
+author: "Corresponding_Author Hugo F. Tapia <hftpia@gmail.com>"
+date: "`r Sys.Date()`"
+bibliography: referencias.bib
+output:
+  html_document:
+    toc: true
+    toc_depth: 5
+    toc_float: true
+    code_folding: hide
+    code_download: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## White paper: Comparación de modelos predictivos de indicadores de rendimiento logístico
+### Autores:   Hugo F. Tapia [1]
+### Filiación: Instituto de Ingeniería Industrial - Facultad de Ingeniería - UNCuyo
+### Contacto: hftapia@gmail.com 
+### Correspondig author: [1]
+### Disponible <https://rpubs.com/hftapia74/1378249>
+
+
+## Resumen
+
+El trabajo analiza la construcción y evaluación de modelos predictivos para estimar el rendimiento logístico regional a partir de datos socioeconómicos. Basado en el trabajo previo [@Tapia2023], que proponía un modelo de regresión lineal utilizando el Logistics Performance Index (LPI) y el PBI per cápita de la población económicamente activa (PBIPEA), este estudio amplía el análisis incorporando métodos de analítica de datos: árboles de decisión y redes neuronales. Para ello se conforma una base de datos con información internacional proveniente del World Bank, Enterprise Survey, Transparencia Internacional, FactbookCIA y el World Economic Forum. Se realiza un análisis exploratorio, correlacional y de componentes principales, seguido de técnicas de clustering (Clara, Agnes y Ward) para evaluar la reproducibilidad de los grupos definidos en [@Tapia2023]. Posteriormente se entrenan modelos predictivos, destacándose una alta precisión del modelo de árboles de decisión (89%) en la clasificación de grupos y un buen rendimiento del modelo de redes neuronales para la predicción del LPI (correlación del 82%). Finalmente, se estima el rendimiento logístico de las regiones de Mendoza mediante estos modelos y se comparan las predicciones con los valores obtenidos originalmente por regresiones lineales, verificándose una correlación aceptable entre ambos enfoques.
+
+Palabras claves: LPI, predicción, modelos.
+
+## Introducción
+
+En el estudio de la logística y las cadenas de abastecimiento a nivel regional existe una problemática que es la caracterización de esta por medio de indicadores. Si se buscan datos sobre rendimientos logísticos regionales no se encuentra información relevante sobre el tema [@Tapia2023].  A nivel mundial se obtiene una referencia por medio del Logistics Performance Index (LPI), que es un indicador logístico por países. 
+
+En [@Tapia2023] se desarrolló un modelo predictivo para determinar el rendimiento logístico regional a un bajo costo, a través de la relación entre parámetros socioeconómicos regionales y el Logistics Performance Index (LPI). La metodología de la investigación fue la de generar en primer lugar una base de datos socio-económicos de organismos internacionales. 
+
+El análisis de los datos y el planteo del modelo se realizaron con ayuda de herramientas informáticas de análisis estadístico. Con los datos obtenidos en el estudio descriptivo se verificó la correlación de las variables planteadas. Se realizó un análisis exploratorio con planilla de cálculo y posteriormente se utilizó el software libre “R” para confirmar el análisis exploratorio y conformar un modelo de relación entre el LPI y los indicadores socioeconómicos. Se trató de establecer relaciones entre variables sin precisar sentido de causalidad. Las variables estudiadas son: LPI vs PBI per cápita de la población económicamente activa. Con lo cual se realizó un modelo predictivo por medio de regresiones lineales según actividades económicas. Para finalizar se realizó una aplicación a la provincia de Mendoza, donde se comparó el valor obtenido por el modelo predictivo y valores obtenidos de un estudio realizado en Mendoza [@Tapia2020].
+
+Posteriormente se estimaron los valores del rendimiento para los distintos departamentos. Así, se estima que Mendoza tiene un rendimiento logístico promedio del 60%, pero cada micro región dentro de la provincia tiene sus particularidades que se observan en el trabajo. 
+
+Esta herramienta de bajo costo permite predecir el rendimiento logístico en distintas regiones, lo que ayuda a comprender el comportamiento logístico de las mismas. Como aplicación directa se podría determinar a través del rendimiento logístico y a nivel de prefactibilidad las necesidades de inversión en aspectos logísticos, como por ejemplo en infraestructuras. 
+
+En este trabajo se plantea como objetivo determinar la fiabilidad del modelo planteado en [@Tapia2023] comparándolo con otros métodos de la analítica de datos como árboles de decisiones y redes neuronales. Finalizando con una aplicación a las regiones de la provincia de Mendoza. 
+
+
+## Estado del Arte
+
+La construcción de modelos predictivos requiere datos confiables. En logística, uno de los indicadores más robustos a nivel país es el LPI del World Bank (WB), complementado por datos socioeconómicos de otras fuentes internacionales. El LPI, vigente desde 2007, se compone de seis dimensiones vinculadas al desempeño logístico [@Arvis2018] y se basa en encuestas a actores del transporte y la carga, lo cual lo hace útil pero también susceptible a errores de muestreo e interpretación. Aunque es la base de datos logística más completa, presenta limitaciones relacionadas con la experiencia de los encuestados y particularidades de países sin litoral marítimo o pequeños estados insulares [@Arvis2018].
+
+A nivel global persisten brechas significativas en los puntajes del LPI entre países según nivel de ingresos, aunque algunos de ingresos medios superan a sus pares, lo que evidencia que el ingreso no explica completamente el desempeño logístico [@Arvis2018]. Estudios sostienen que el rendimiento logístico está estrechamente vinculado con el desarrollo económico, pero también influido por factores políticos [@Bizoi2014]. Asimismo, existe evidencia de la incidencia directa de la infraestructura, la política económica y la flexibilidad logística en el crecimiento nacional [@Navickas2011].
+
+Investigaciones con amplias muestras de países muestran que la calidad de la infraestructura ferroviaria y portuaria es determinante del LPI (Khan et al., 2017), y que aduanas e infraestructura son los factores más relevantes en la relación entre LPI y PBI [@Uca2015]. También se ha demostrado que el LPI media la relación entre el Índice de Percepción de la Corrupción y el comercio exterior, reforzando su rol en la competitividad [@Civelek2015]. Sorprendentemente, indicadores sociales muestran una relación más estrecha con el desempeño logístico que los económicos, cuestionando la idea de que mayores inversiones garantizan mejores resultados [@Guner2012].
+
+Otras investigaciones señalan que el LPI tiene un efecto moderador y mediador en la relación entre competitividad (GCI), PIB y desempeño logístico, confirmando que el LPI es un buen predictor del rendimiento económico [@Cemberci2015 ; @Daleo2015]. No obstante, algunos autores critican la metodología del WB, proponiendo ponderaciones diferenciadas de los componentes del LPI mediante el método BWM. Estas investigaciones otorgan mayor peso relativo a la infraestructura (0.24) y menor al seguimiento y rastreo (0.10), mostrando discrepancias con la ponderación uniforme actual [@Rezaei2018].
+Finalmente, además del LPI, existen otros indicadores relevantes, como los provistos por el World Economic Forum, que incluyen métricas de infraestructura y desempeño de proveedores [@WEForum2018].
+
+
+## Materiales y métodos
+
+La metodología es no experimental transversal correlacional la cual consta de tres partes: conformación de base de datos, análisis y planteo de modelos. La conformación de la base de datos se realizó tomando la base de datos ocupada en [@Tapia2023] y completándola con los datos obtenidos de esa investigación. Esta base de dato había sido desarrollada con datos de la web proveniente de la información publicada por diferentes organismos internacionales (World Bank, Enterprise Survey WB, FactbookCia, Transparency International y World Economic Forum) [@Tapia2021]. 
+
+El modelo predictivo determinó 8 grupos (Grupo0, Grupo1, Grupo2, Grupo3, Grupo4, Grupo5, GrupoNC, GrupoRN). Cada uno caracterizados por relaciones de PBIPEA y actividades económicas. Los datos se observan en el archivo que conforma el dataset (adjunto:Datos_CursoAD_completo_1.xls ).
+
+```{r}
+library(readxl)
+
+Datos_CursoAD_completo_1 <- read_excel("Datos_CursoAD_completo_1.xls")
+
+```
+
+
+Para los grupos: 1; 2; 3; 4; 5 y RN se realizó un modelo de regresión lineal para predecir valores de rendimiento logístico. Los países que no pudieron clasificarse en los diferentes grupos, se los agrupó en el Grupo0 (PBIPEA<7000) y en el GrupoNC (NOC). En la siguiente figura se observan las diferentes regresiones. 
+
+
+```{r, fig.cap="Regresiones lineales por grupos, extraído [@Tapia2021]", out.width="80%", fig.align="center"}
+library (knitr)
+knitr::include_graphics ("Regresiones.png")
+```
+
+Para esta investigación se utilizará el software R, y los métodos KNN, árboles de decisiones y redes neuronales. Se compararán los valores de las predicciones para determinar la fiabilidad de los distintos métodos. 
+
+Además, se predecirán los valores de rendimiento logístico de las regiones de Mendoza, para lo cual se utilizará la siguiente base de datos. Para esta aplicación se recurre a los datos estadísticos del 2019 de la DEIE (Dirección de Estadísticas e Investigaciones económicas de Mendoza) para obtener los valores del Producto Bruto Geográfico (PBG), equivalente al PBI circunscripto al estudio de una región de un país. En esta base de datos se puede observar un resumen del PBG y su incidencia en las distintas actividades económicas, que es lo que demanda el modelo desarrollado [@Tapia2023]. Además, se considera la PEA, para calcular el coeficiente PBGPEA equivalente al PBIPEA. De esta manera se determinó cuáles son las regresiones que se deben utilizar para determinar el LPI. En el dataset correspondiente se observan los valores característicos de la región de Mendoza, al grupo que se determinó que pertenecían y las predicciones de los valores de LPI (adjunto: Datos_Mza_1.xls)  
+
+```{r}
+Datos_Mza_1 <- read_excel("Datos_Mza_1.xls")
+```
+
+
+## Desarrollo
+
+### Análisis exploratorio
+
+A continuación se procederá a la conformación de la base de datos para realizar el análisis exploratorio. Para que sea equievalente al planteado en [@Tapia2023] se procederá a eliminar las filas que pertenezcan a los GrupoNC y Grupo0
+
+```{r}
+library(dplyr)
+
+Datos_CursoAD_equivalente <- Datos_CursoAD_completo_1 %>% 
+  filter(!Grupos %in% c("GrupoNC", "Grupo0"))
+```
+
+
+```{r}
+Datos_CursoAD_1 <- Datos_CursoAD_equivalente [ ,c(3,4,5,6,7,8,9,10,11,12,13,14,15)]
+
+```
+
+#### Relaciones entre variables
+
+```{r}
+library (car)
+scatterplotMatrix(Datos_CursoAD_1)
+```
+
+#### Correlaciones entre variables
+
+```{r}
+library(corrplot)
+M <- cor (Datos_CursoAD_1)
+corrplot(M)
+```
+
+
+```{r}
+
+library(psych)
+corPlot(Datos_CursoAD_1)
+```
+
+Se observa las mayores correlaciones para el LPI con las variables: PBIPEA, Agr, Exp_Merc, RRNN y Exp_H_Tech.
+
+
+#### Matriz de covarianza 
+
+```{r}
+library(scatterPlotMatrix)
+scatterPlotMatrix(Datos_CursoAD_1)
+```
+
+
+
+#### Determinación de componentes principales
+
+
+
+```{r}
+mins <- sapply(Datos_CursoAD_1, min)
+maxs <- sapply(Datos_CursoAD_1, max)
+
+```
+
+```{r}
+normalize <- function(x, min_val, max_val){
+  (x - min_val) / (max_val - min_val)
+}
+
+Datos_CursoAD_1_norm <- as.data.frame(
+  mapply(function(x, mn, mx) normalize(x, mn, mx),
+         Datos_CursoAD_1, mins, maxs)
+)
+
+```
+
+
+
+
+```{r}
+PC1 <- princomp (Datos_CursoAD_1_norm)
+PC1
+```
+
+
+
+```{r}
+plot(PC1)
+```
+
+```{r}
+biplot(PC1)
+```
+
+```{r}
+acp2 <-PC1$scores[ ,1:2]
+plot(acp2)
+```
+
+#### Estudio de clústers
+
+a- Agnes
+
+```{r}
+library(cluster)
+agp3 = agnes(acp2,method="average")
+plot(agp3)
+```
+
+Se estudiarán la cantidad de 6 clústers que son los grupos determinados en el estudio de base.
+
+
+Estudio por componentes principales
+
+```{r}
+agpcut <- cutree(agp3,6)
+par(mfrow=c(1,1))
+plot(acp2,col=agpcut)
+```
+
+b- Clara
+
+```{r}
+library(cluster)
+plot(clara(Datos_CursoAD_1,6))
+```
+
+Se agregarán los números de clústers al dataset inicial
+
+```{r}
+modelo <- clara(Datos_CursoAD_1, k = 6)
+modelo$clustering
+```
+
+```{r}
+clusters <- split(1:nrow(Datos_CursoAD_equivalente), modelo$clustering)
+clusters
+```
+
+```{r}
+Datos_CursoAD_equivalente$cluster <- modelo$clustering
+
+```
+Se observa que la clasificación de clústers utilizada por el método Clara no es comparable con la clasificación en la fuente [@Tapia2023]
+
+c- Ward
+
+Se utilizará el método Ward, que es el que se utilizó en [@Tapia2023]
+
+```{r}
+# 1. Escalar datos numéricos
+Datos_CursoAD_1scaled <- scale(Datos_CursoAD_1)
+
+# 2. Calcular distancia euclidiana
+dist_euclid <- dist(Datos_CursoAD_1scaled, method = "euclidean")
+
+# 3. Clustering jerárquico con método Ward
+hc_ward <- hclust(dist_euclid, method = "ward.D2")
+
+# 4. Graficar dendrograma
+plot(hc_ward, 
+     main = "Clustering Jerárquico - Método Ward (D2)",
+     xlab = "",
+     ylab = "Altura",
+     sub = "")
+
+# 5. Cortar el árbol en k clusters (ej: 3 clusters)
+modelo2 <- cutree(hc_ward, k = 6)
+
+# 6. Agregar la clasificación al dataset
+Datos_CursoAD_cluster <- as.factor(modelo2)
+
+# Ver clusters
+table(Datos_CursoAD_cluster)
+modelo2
+```
+
+
+Se agregarán los números de clústers al dataset inicial
+
+
+
+```{r}
+clusters2 <- split(1:nrow(Datos_CursoAD_equivalente), modelo2)
+clusters2
+
+```
+
+```{r}
+Datos_CursoAD_equivalente$cluster2 <- modelo2
+
+```
+
+
+```{r}
+library(openxlsx)
+
+write.xlsx(Datos_CursoAD_equivalente, "Datos_CursoAD_equivalente.xlsx")
+
+```
+
+De las dos maneras de obtener clústers no se observa demasiada conincidencia con lo planteado en [@Tapia2023]
+
+
+## Modelos predictivos
+
+
+### Árboles de decisiones
+
+```{r}
+library(rpart)
+library(rpart.plot)   # para graficar el árbol
+library (car)
+library (party)
+
+```
+
+```{r}
+Datos_CursoAD_Tree <- Datos_CursoAD_equivalente [ ,c(3,4,5,6,7,8,9,10,11,12,13,14,15,16)]
+
+Datos_CursoAD_Tree$Grupos <- as.factor(Datos_CursoAD_Tree$Grupos)
+
+
+```
+
+Clasificación utilizando LPI y otro tipo de algoritmo para el árbol. 
+
+
+```{r}
+arbol <- rpart(Grupos ~ ., 
+               data = Datos_CursoAD_Tree, 
+               method = "class")   # clasificación
+
+```
+
+
+```{r}
+rpart.plot(arbol, type = 2, extra = 104, fallen.leaves = TRUE)
+
+```
+
+
+```{r}
+pred <- predict(arbol, Datos_CursoAD_Tree, type = "class")
+
+table(Predicción = pred, Real = Datos_CursoAD_Tree$Grupos)
+
+
+```
+
+Se observa una matriz de confusión con una diagonal principal dominante. Con la siguiente efectividad de predicción. 
+
+```{r}
+mean(pred == Datos_CursoAD_Tree$Grupos)
+
+```
+
+
+```{r}
+pred1 <- predict(arbol, Datos_Mza_1 [ , c (2,3,4,5,6,7,8,9,10,11,12,13,14)], type = "class")
+pred1
+```
+
+
+
+```{r}
+Mza2 <- split(1:nrow(Datos_Mza_1), pred1)
+Mza2
+```
+
+
+```{r}
+Datos_Mza_1$Mza2 <- pred1
+
+write.xlsx(Datos_Mza_1, "Datos_Mza_1.xlsx")
+
+```
+
+
+Comparando los resultados del modelo predictivo de Grupos y la clasificación hecha en [@Tapia2023] se observa una equivalencia del 89,47%.
+
+
+### Redes Neuronales
+
+Se realizará una Red Neuronal para predecir los valores de LPI y compararlos con las predicciones de [@Tapia2023] para Mendoza.
+
+Primero se realiza un proceso de normalización. 
+
+```{r}
+mins <- sapply(Datos_CursoAD_1, min)
+maxs <- sapply(Datos_CursoAD_1, max)
+
+```
+
+```{r}
+normalize <- function(x, min_val, max_val){
+  (x - min_val) / (max_val - min_val)
+}
+
+Datos_CursoAD_1_norm <- as.data.frame(
+  mapply(function(x, mn, mx) normalize(x, mn, mx),
+         Datos_CursoAD_1, mins, maxs)
+)
+
+```
+
+
+Segundo se divide el dataset en una muestra de entrenamiento y una muestra para testeo. 
+
+```{r}
+indice <- sample(2, nrow(Datos_CursoAD_1_norm), replace = TRUE, prob = c(0.7,0.3))
+LPI_train <- Datos_CursoAD_1_norm [indice==1,]
+LPI_test  <- Datos_CursoAD_1_norm [indice==2,]
+
+```
+
+Modelo predictivo de red neuronal. 
+
+```{r}
+library(neuralnet)
+
+LPI_model <- neuralnet(LPI ~ PBIPEA + Agr + Ind + Comercio + Exp_Mer + Exp_ByS + Exp_Comb + Exp_MM + Prod_oil + RRNN + Tierras_Agr + Exp_H_Tech , data = LPI_train, hidden = c(2,1))
+
+str(LPI_model)
+```
+
+
+```{r}
+library(NeuralNetTools)
+
+plotnet(LPI_model, 
+        alpha = 0.7,
+        node_labs = TRUE,
+        y_names = "LPI_pred",
+        circle_cex = 5,
+        cex_val = 0.6)
+
+```
+
+Se comprueba el nivel de eficiencia del modelo con respeto al set de testeo
+
+```{r}
+model_results <- compute(LPI_model,LPI_test[1:13])
+predicted_LPI <- model_results$net.result
+```
+
+```{r}
+cor(predicted_LPI,LPI_test$LPI)
+```
+
+El nivel de correlación del testeo es del 86%
+
+A continuación, se realiza la predicción de los valores para Mendoza.
+
+
+Base de datos y normalización equivalente al set de datos originales
+
+```{r}
+Mza_test<- Datos_Mza_1 [ ,c(2,3,4,5,6,7,8,9,10,11,12,13,14)]
+Mza_test_norm <- as.data.frame(
+  mapply(function(x, mn, mx) normalize(x, mn, mx),
+         Mza_test, mins, maxs)
+)
+
+```
+
+Predicciones de Mendoza
+
+```{r}
+Mza_results <- compute(LPI_model,Mza_test_norm [1:12])
+Mza_LPI_nomr <- Mza_results$net.result
+
+```
+
+
+```{r}
+Mza_LPI <- Mza_LPI_nomr * (maxs["LPI"] - mins["LPI"]) + mins["LPI"]
+Mza_LPI
+
+```
+
+Comparación de correlación entre los valores determinados por la red neuronal y el método de regresiones lineales observados en [@Tapia2023]
+
+```{r}
+cor(Mza_LPI,Datos_Mza_1$LPI)
+```
+
+
+```{r}
+Mza3 <- split(1:nrow(Datos_Mza_1), Mza_LPI)
+
+```
+
+
+```{r}
+Datos_Mza_1$Mza3 <- Mza_LPI
+
+write.xlsx(Datos_Mza_1, "Datos_Mza_1.xlsx")
+```
+
+
+## Discución de Resultados
+
+### Clasificación por grupos
+
+#### a. Clasificación por medio de Clústers 
+        
+No se observan demasiadas similitudes entre los grupos determinados en [@Tapia2023] y los obtenidos con los métodos de clústers utilizados en esta investigación. 
+
+#### b. Clasificación de grupos aplicados a Mendoza
+
+Cuando se realiza este tipo de clasificación según la base de datos original, utilizando los Grupos preclasificados. Se utiliza un método predictivo por medio de árboles. Al comparar los resultados del método predictivo y lo determinado para Mendoza en el trabajo original, se obtiene una efectividad del 89% de los casos. 
+        
+Esta es evidencia de que el método de clasificación por grupos utilizado en  [@Tapia2023] tiene una efectividad de casi el 90%. 
+      
+### Modelos predictivo de LPI
+
+El desarrollo del modelo predictivo basado en Redes Neuronales presenta un buen coefiente de correlación del 82%. Comparable con el rango de valores de eficiencia de las regresiones lineales presentados en [@Tapia2023], ver figura siguiente. 
+        
+
+```{r fig.cap="Figura 1 – Eficiencia de Regresiones lineales por grupos, extraído [@Tapia2021]", out.width="50%", fig.align="center"}
+library (knitr)
+knitr::include_graphics ("Test-regresiones.png")
+
+```
+
+Si se compara la predicción para Mendoza con  redes neuronales y con el modelo de regresiones lineales, se observa una correlación aceptable de 0,72. La ventaja del modelo con redes neuronales tiene la ventaja de que no necesita una clasificación por grupos. 
+
+
+## Conclusiones
+
+El estudio presentado constituye un aporte significativo al análisis y predicción del rendimiento logístico regional, especialmente en contextos donde la información directa es escasa o inexistente. En primer lugar, queda demostrada la relevancia del LPI como indicador sintético y robusto a nivel internacional, así como la pertinencia de utilizar variables socioeconómicas para construir aproximaciones predictivas de bajo costo. La base de datos utilizada y ampliada en esta investigación permite establecer relaciones valiosas entre características económicas estructurales y desempeño logístico, generando un marco adecuado para la comparación de diversos métodos de analítica de datos.
+
+En relación con los métodos predictivos, el análisis evidencia diferencias sustantivas entre las técnicas aplicadas. Los métodos de clustering —tanto por Clara como por Agnes y Ward— mostraron dificultades para reproducir los grupos previamente establecidos en [@Tapia2023]. Esto sugiere que la clasificación original depende de criterios específicos relacionados con las actividades económicas y la estructura productiva de los países, criterios que no emergen de manera espontánea mediante algoritmos de agrupamiento no supervisado. Sin embargo, al aplicar un proceso supervisado para la clasificación de grupos, el árbol de decisión obtuvo una precisión del 89%, lo que indica que los patrones presentes en la clasificación original pueden ser capturados adecuadamente cuando la técnica incorpora información previa.
+
+El modelo de redes neuronales mostró también resultados prometedores. Con una correlación del 82% al evaluar el conjunto de testeo, se evidencia que este tipo de modelos tiene capacidad para aprender relaciones no lineales entre las variables socioeconómicas y el LPI, superando en flexibilidad a los modelos lineales tradicionales. Más aún, al comparar las predicciones para Mendoza con las estimaciones obtenidas mediante el método de regresiones lineales, se observó una correlación aceptable de 0,72. Este resultado confirma que las redes neuronales pueden ser una herramienta complementaria —e incluso alternativa— para la predicción del rendimiento logístico sin la necesidad de clasificar previamente a las regiones en grupos.
+
+Desde una perspectiva aplicada, este trabajo demuestra la utilidad de los métodos de analítica de datos en el diseño de herramientas predictivas para la planificación logística regional. La posibilidad de estimar el rendimiento logístico con información disponible públicamente facilita la toma de decisiones en políticas públicas, especialmente en territorios donde no existen mediciones estandarizadas. Además, la comparación de métodos permite identificar fortalezas y limitaciones de cada enfoque: las regresiones lineales ofrecen interpretabilidad y simplicidad; los árboles de decisión aportan claridad en la clasificación; las redes neuronales permiten capturar relaciones complejas entre múltiples factores.
+
+Finalmente, el análisis realizado para las regiones de Mendoza muestra el potencial del enfoque predictivo para aplicaciones territoriales concretas. La identificación de variaciones en el rendimiento logístico entre departamentos aporta información estratégica para orientar inversiones en infraestructura, optimizar la planificación y evaluar desigualdades territoriales. En conjunto, el estudio confirma que la combinación de datos socioeconómicos e inteligencia artificial constituye una herramienta sólida y eficaz para estimar indicadores logísticos y mejorar la comprensión del sistema productivo y territorial.
+
+
+## ANEXOS
+### Base de datos
+
+N;Pais;PBIPEA;Agr;Ind;Comercio;Exp_Mer;Exp_ByS;Exp_Comb;Exp_MM ;Prod_oil;RRNN;Tierras_Agr;Exp_H_Tech;LPI;Grupos
+1;Afghanistan;6276;0,21;0,11;0,37;0,01;0,07;0,00;0,00;0;0,01;0,58;0,00;2,13;Grupo0
+2;Albania;28603;0,20;0,06;0,56;0,05;0,29;0,01;0,00;171;0,02;0,43;0,00;2,51;Grupo1
+3;Algeria;52937;0,12;0,06;0,48;0,05;0,21;0,04;0,00;1129;0,14;0,17;0,00;2,46;GrupoRN
+4;Angola;15749;0,00;0,00;0,42;0,15;0,30;0,00;0,00;1491;0,13;0,47;0,00;2,16;GrupoRN
+5;Argentina;45039;0,06;0,14;0,21;0,07;0,13;0,00;0,00;259;0,01;0,54;0,01;2,93;Grupo2
+6;Armenia;20792;0,16;0,10;0,48;0,06;0,33;0,00;0,02;0;0,05;0,59;0,00;2,49;Grupo2
+7;Australia;89515;0,02;0,06;0,32;0,17;0,19;0,05;0,05;227;0,06;0,48;0,02;3,78;Grupo4
+8;Austria;90843;0,01;0,16;0,79;0,37;0,52;0,01;0,01;33;0,00;0,33;0,06;3,89;Grupo4
+9;Azerbaijan;33202;0,06;0,05;0,57;0,08;0,46;0,07;0,00;1678;0,20;0,58;0,00;2,25;GrupoRN
+10;Bahamas, The;40889;0,01;0,03;0,26;0,05;0,36;0,00;0,00;0;0,00;0,01;0,00;2,76;Grupo2
+11;Bahrain;78169;0,00;0,18;0,68;0,20;0,74;0,11;0,05;612;0,04;0,11;0,00;3,18;Grupo2
+12;Bangladesh;8649;0,14;0,17;0,36;0,06;0,17;0,00;0,00;1;0,01;0,71;0,00;1,94;Grupo0
+13;Belarus;31432;0,07;0,20;1,07;0,15;0,63;0,03;0,00;64;0,01;0,42;0,01;2,48;Grupo1
+14;Belgium;102947;0,01;0,13;1,65;0,77;0,83;0,05;0,02;0;0,00;0,44;0,10;4,07;Grupo5
+15;Benin;5104;0,23;0,12;0,54;0,08;0,29;0,00;0,00;0;0,07;0,33;0,00;2,59;Grupo0
+16;Bhutan;17081;0,17;0,07;0,69;0,08;0,30;0,00;0,00;0;0,04;0,14;0,00;2,36;Grupo1
+17;Bolivia;15115;0,11;0,11;0,46;0,09;0,24;0,03;0,03;119;0,06;0,35;0,00;2,38;Grupo2
+18;Bosnia and Herzegovina;37218;0,06;0,12;0,86;0,10;0,35;0,01;0,01;0;0,01;0,43;0,00;2,62;Grupo1
+19;Botswana;38229;0,02;0,05;0,86;0,17;0,55;0,00;0,01;0;0,01;0,46;0,00;2,59;Grupo1
+20;Brazil;31920;0,05;0,10;0,18;0,06;0,12;0,00;0,01;244;0,03;0,34;0,01;3,15;Grupo3
+21;Brunei Darussalam;149431;0,01;0,11;0,69;0,16;0,50;0,14;0,00;5008;0,09;0,03;0,00;2,57;GrupoNC
+22;Bulgaria;41702;0,04;0,14;1,04;0,19;0,64;0,02;0,02;3;0,01;0,46;0,02;3,00;Grupo3
+23;Burkina Faso;4685;0,29;0,07;0,48;0,07;0,29;0,00;0,01;0;0,20;0,44;0,00;2,43;Grupo0
+24;Burundi;1686;0,36;0,09;0,24;0,01;0,06;0,00;0,00;0;0,18;0,79;0,00;1,60;Grupo0
+25;Cambodia;5992;0,25;0,16;1,13;0,18;0,61;0,00;0,00;0;0,02;0,31;0,00;2,52;Grupo0
+26;Cameroon;7314;0,15;0,15;0,27;0,05;0,19;0,00;0,00;91;0,06;0,21;0,00;2,44;Grupo2
+27;Canada;84311;0,01;0,10;0,52;0,23;0,31;0,04;0,02;1846;0,01;0,07;0,03;3,92;Grupo4
+28;Chad;5220;0,49;0,03;0,46;0,06;0,28;0,00;0,00;204;0,16;0,40;0,00;2,11;Grupo0
+29;Chile;49320;0,04;0,11;0,48;0,14;0,28;0,00;0,07;5;0,10;0,21;0,01;3,03;Grupo2
+30;China;26002;0,09;0,29;0,33;0,10;0,20;0,00;0,00;51;0,01;0,56;0,03;3,51;Grupo4
+31;Colombia;26776;0,07;0,12;0,27;0,05;0,15;0,02;0,00;341;0,04;0,40;0,00;2,75;Grupo2
+32;Comoros;5723;0,00;0,00;0,41;0,03;0,16;0,00;0,00;0;0,04;0,71;0,00;2,33;Grupo0
+33;Congo, Democratic Republic of the;1983;0,19;0,18;0,29;0,09;0,27;0,00;0,00;7;0,33;0,12;0,00;2,32;Grupo0
+34;Congo, Republic of the;14631;0,09;0,08;1,18;0,13;0,57;0,00;0,00;1497;0,25;0,31;0,00;2,25;GrupoRN
+35;Costa Rica;36483;0,05;0,11;0,43;0,12;0,33;0,00;0,00;0;0,01;0,35;0,02;2,69;Grupo2
+36;Cote d'Ivoire;10746;0,21;0,13;0,54;0,13;0,29;0,00;0,00;38;0,06;0,65;0,00;2,64;Grupo2
+37;Croatia;55528;0,03;0,13;0,70;0,14;0,49;0,01;0,00;74;0,01;0,27;0,02;2,92;Grupo2
+38;Cyprus;49752;0,02;0,04;0,54;0,10;0,65;0,02;0,01;0;0,00;0,14;0,01;2,91;Grupo2
+39;Czechia;63151;0,02;0,24;1,57;0,48;0,80;0,01;0,01;4;0,00;0,55;0,07;3,44;Grupo3
+40;Denmark;92537;0,01;0,13;0,59;0,34;0,54;0,01;0,00;465;0,01;0,62;0,05;3,93;Grupo4
+41;Djibouti;8697;0,02;0,04;0,57;0,04;0,34;0,00;0,00;0;0,00;0,73;0,00;2,05;Grupo0
+42;Dominican Republic;32358;0,06;0,13;0,38;0,06;0,25;0,00;0,00;0;0,02;0,49;0,00;2,69;Grupo2
+43;Ecuador;22455;0,10;0,09;0,34;0,09;0,20;0,03;0,00;685;0,04;0,23;0,01;2,63;Grupo2
+44;Egypt;37000;0,12;0,17;0,24;0,02;0,10;0,00;0,00;162;0,04;0,04;0,00;3,00;Grupo3
+45;El Salvador;18943;0,06;0,16;0,64;0,10;0,28;0,00;0,00;0;0,01;0,77;0,00;2,77;Grupo2
+46;Eritrea;3910;0,00;0,00;0,00;0,04;0,00;0,00;0,00;0;0,00;0,75;0,00;2,10;Grupo0
+47;Estonia;56561;0,02;0,14;1,20;0,34;0,79;0,03;0,01;0;0,01;0,23;0,03;3,11;Grupo2
+48;Ethiopia;3489;0,35;0,06;0,27;0,02;0,08;0,00;0,00;0;0,12;0,36;0,00;2,32;Grupo0
+49;Fiji;22226;0,11;0,10;0,69;0,11;0,26;0,00;0,00;0;0,02;0,23;0,00;2,19;GrupoNC
+50;Finland;88289;0,02;0,15;0,50;0,24;0,36;0,02;0,01;0;0,01;0,07;0,02;3,92;Grupo4
+51;France;93750;0,01;0,10;0,44;0,18;0,30;0,00;0,00;5;0,00;0,52;0,05;3,81;Grupo4
+52;Gabon;63811;0,05;0,00;0,47;0,11;0,44;0,00;0,00;3243;0,14;0,20;0,00;2,27;GrupoRN
+53;Gambia, The;5357;0,17;0,05;0,50;0,03;0,23;0,00;0,00;0;0,09;0,60;0,00;2,38;Grupo0
+54;Georgia;18189;0,08;0,10;0,65;0,06;0,44;0,00;0,01;2;0,01;0,37;0,00;2,47;Grupo2
+55;Germany;88235;0,01;0,21;0,69;0,35;0,46;0,01;0,01;11;0,00;0,48;0,06;4,16;Grupo5
+56;Ghana;8638;0,18;0,04;0,56;0,10;0,41;0,02;0,00;76;0,16;0,69;0,00;2,50;Grupo2
+57;Greece;66972;0,03;0,09;0,40;0,09;0,30;0,02;0,01;6;0,00;0,60;0,01;2,90;Grupo1
+58;Guatemala;19010;0,10;0,18;0,40;0,08;0,20;0,00;0,01;14;0,02;0,35;0,00;2,63;Grupo2
+59;Guinea;3444;0,18;0,11;0,74;0,15;0,29;0,00;0,00;0;0,22;0,59;0,00;2,54;Grupo0
+60;Guinea-Bissau;3755;0,46;0,11;0,42;0,10;0,27;0,00;0,00;0;0,19;0,58;0,00;2,20;Grupo0
+61;Guyana;20198;0,13;0,05;0,82;0,23;0,46;0,00;0,04;0;0,19;0,09;0,00;2,38;Grupo1
+62;Haiti;4245;0,18;0,07;0,56;0,05;0,21;0,00;0,00;0;0,01;0,67;0,00;2,01;Grupo0
+63;Honduras;9989;0,12;0,17;0,85;0,19;0,43;0,00;0,00;0;0,02;0,29;0,00;2,48;Grupo2
+64;Hong Kong;104958;0,00;0,01;3,32;1,25;1,87;0,05;0,15;0;0,00;0,05;0,15;3,93;Grupo4
+65;Hungary;56390;0,04;0,20;1,56;0,39;0,90;0,01;0,00;30;0,00;0,59;0,05;3,18;Grupo2
+66;Iceland;75599;0,05;0,09;0,50;0,28;0,48;0,00;0,10;0;0,00;0,19;0,07;3,33;Grupo2
+67;India;16307;0,16;0,15;0,27;0,03;0,19;0,00;0,00;14;0,02;0,60;0,00;3,18;Grupo3
+68;Indonesia;23381;0,13;0,21;0,30;0,05;0,19;0,01;0,00;66;0,02;0,31;0,00;2,88;Grupo3
+69;Iran;60566;0,10;0,12;0,27;0,04;0,22;0,00;0,00;1498;0,16;0,28;0,00;2,66;GrupoRN
+70;Iraq;63495;0,05;0,02;0,48;0,07;0,33;0,07;0,00;4350;0,42;0,21;0,00;2,10;GrupoRN
+71;Ireland;145706;0,01;0,32;0,70;0,40;1,22;0,00;0,00;0;0,00;0,64;0,12;3,77;Grupo3
+72;Israel;77191;0,01;0,12;0,41;0,20;0,30;0,00;0,00;1;0,00;0,25;0,04;3,48;Grupo3
+73;Italy;94729;0,02;0,15;0,47;0,19;0,30;0,01;0,00;28;0,00;0,44;0,01;3,70;Grupo3
+74;Jamaica;18275;0,07;0,08;0,42;0,04;0,31;0,01;0,00;0;0,01;0,41;0,00;2,39;Grupo1
+75;Japan;74555;0,01;0,21;0,25;0,13;0,16;0,00;0,00;1;0,00;0,12;0,02;3,97;Grupo5
+76;Jordan;39372;0,04;0,16;0,70;0,08;0,35;0,00;0,01;0;0,01;0,12;0,00;2,62;Grupo1
+77;Kazakhstan;47299;0,05;0,11;0,45;0,08;0,32;0,05;0,01;1739;0,15;0,80;0,03;2,66;GrupoRN
+78;Kenya;8540;0,32;0,09;0,28;0,04;0,14;0,00;0,00;0;0,03;0,49;0,00;2,64;Grupo0
+79;Korea, South;67771;0,02;0,27;0,64;0,26;0,42;0,01;0,01;0;0,00;0,18;0,07;3,66;Grupo4
+80;kosovo;37414;0,09;0,12;0,00;0,00;0,50;0,00;0,00;0;0,02;0,50;0,00;2,51;Grupo1
+81;Kuwait;129647;0,01;0,07;0,69;0,16;0,48;0,14;0,00;13117;0,45;0,08;0,00;2,88;GrupoRN
+82;Kyrgyzstan;8586;0,13;0,15;0,82;0,07;0,36;0,00;0,01;4;0,08;0,55;0,01;2,18;Grupo1
+83;Laos;11068;0,17;0,08;0,51;0,09;0,33;0,00;0,03;0;0,09;0,10;0,03;2,26;Grupo1
+84;Latvia;50718;0,03;0,11;0,96;0,24;0,60;0,01;0,00;0;0,01;0,30;0,03;3,03;Grupo2
+85;Lebanon;38542;0,03;0,08;0,47;0,05;0,25;0,00;0,00;0;0,00;0,64;0,00;2,86;Grupo2
+86;Lesotho;8693;0,05;0,16;1,20;0,11;0,42;0,00;0,00;0;0,07;0,75;0,00;2,27;Grupo1
+87;Liberia;2388;0,34;0,03;0,70;0,05;0,21;0,00;0,00;0;0,50;0,28;0,00;2,39;Grupo0
+88;Lithuania;57926;0,03;0,17;1,22;0,29;0,74;0,04;0,00;14;0,00;0,48;0,03;3,06;Grupo2
+89;Luxembourg;216375;0,00;0,05;0,64;0,26;2,21;0,00;0,01;0;0,00;0,51;0,02;3,82;GrupoNC
+90;Madagascar;2805;0,21;0,00;0,52;0,07;0,33;0,00;0,02;0;0,12;0,71;0,00;2,36;Grupo0
+91;Malawi;2689;0,26;0,10;0,63;0,05;0,33;0,00;0,00;0;0,11;0,61;0,00;2,86;Grupo0
+92;Malaysia;54809;0,09;0,22;1,21;0,23;0,68;0,03;0,01;441;0,04;0,24;0,10;3,40;Grupo3
+93;Maldives;25106;0,06;0,02;0,56;0,05;0,75;0,00;0,00;0;0,00;0,26;0,00;2,55;Grupo2
+94;Mali;5854;0,38;0,00;0,49;0,07;0,23;0,00;0,00;0;0,13;0,34;0,00;2,27;Grupo0
+95;Malta;81561;0,01;0,08;0,85;0,18;1,36;0,04;0,00;0;0,00;0,32;0,04;2,94;Grupo1
+96;Mauritania;13388;0,24;0,06;0,70;0,08;0,37;0,00;0,04;39;0,26;0,39;0,00;2,03;GrupoRN
+97;Mauritius;44150;0,03;0,12;0,57;0,09;0,45;0,00;0,00;0;0,00;0,42;0,00;2,53;Grupo1
+98;Mexico;39187;0,03;0,17;0,72;0,17;0,37;0,01;0,00;384;0,03;0,55;0,03;3,08;Grupo3
+99;Moldova;12517;0,12;0,12;0,89;0,13;0,43;0,00;0,00;0;0,00;0,75;0,00;2,31;Grupo1
+100;Mongolia;29140;0,12;0,07;0,74;0,13;0,50;0,04;0,07;185;0,23;0,73;0,02;2,19;GrupoRN
+101;Montenegro;47375;0,07;0,04;0,60;0,03;0,40;0,00;0,00;0;0,01;0,17;0,00;2,36;GrupoNC
+102;Morocco;22877;0,12;0,16;0,62;0,08;0,35;0,00;0,01;0;0,02;0,69;0,00;2,74;Grupo2
+103;Mozambique;3476;0,23;0,09;0,77;0,08;0,37;0,02;0,02;0;0,17;0,64;0,00;2,25;Grupo0
+104;Namibia;33114;0,06;0,11;0,97;0,13;0,41;0,00;0,03;0;0,04;0,47;0,00;2,50;Grupo1
+105;Nepal;4106;0,29;0,05;0,46;0,01;0,09;0,00;0,00;0;0,01;0,29;0,00;2,21;Grupo0
+106;Netherlands;94526;0,02;0,11;1,39;0,67;0,82;0,06;0,02;20;0,00;0,55;0,12;4,14;Grupo5
+107;New Zealand;67342;0,00;0,00;0,37;0,19;0,26;0,00;0,01;133;0,01;0,42;0,02;3,39;Grupo3
+108;Nicaragua;11470;0,15;0,14;0,90;0,14;0,39;0,00;0,00;0;0,04;0,42;0,00;2,48;Grupo2
+109;Niger;2317;0,39;0,06;0,36;0,05;0,16;0,01;0,02;16;0,14;0,36;0,00;2,42;Grupo0
+110;Nigeria;18978;0,21;0,09;0,18;0,03;0,09;0,03;0,00;326;0,05;0,78;0,00;2,60;Grupo2
+111;Norway;126033;0,02;0,07;0,44;0,26;0,34;0,14;0,02;5952;0,06;0,03;0,05;3,83;Grupo3
+112;Oman;76202;0,02;0,08;0,71;0,13;0,41;0,08;0,00;4180;0,27;0,05;0,00;2,80;GrupoRN
+113;Pakistan;14251;0,23;0,12;0,24;0,02;0,09;0,00;0,00;13;0,01;0,47;0,00;2,66;Grupo2
+114;Panama;46068;0,02;0,06;0,55;0,12;0,41;0,00;0,00;0;0,00;0,30;0,00;2,93;Grupo2
+115;Papua New Guinea;6328;0,00;0,00;0,53;0,36;0,00;0,00;0,00;155;0,16;0,03;0,00;2,30;Grupo0
+116;Paraguay;18962;0,18;0,11;0,67;0,13;0,42;0,03;0,00;0;0,02;0,55;0,01;2,63;Grupo2
+117;Peru;22677;0,07;0,13;0,38;0,09;0,22;0,01;0,05;23;0,08;0,19;0,00;2,79;Grupo2
+118;Philippines;17564;0,10;0,20;0,48;0,07;0,28;0,00;0,00;5;0,01;0,42;0,04;2,93;Grupo3
+119;Poland;56788;0,02;0,18;0,85;0,19;0,52;0,00;0,01;11;0,01;0,47;0,02;3,35;Grupo3
+120;Portugal;59945;0,02;0,12;0,60;0,18;0,40;0,01;0,00;0;0,00;0,40;0,01;3,41;Grupo3
+121;Qatar;157744;0,00;0,09;0,59;0,19;0,47;0,15;0,00;7897;0,21;0,06;0,00;3,23;GrupoRN
+122;Romania;50516;0,04;0,20;0,74;0,14;0,41;0,01;0,00;87;0,01;0,60;0,01;2,88;Grupo2
+123;Russia;49085;0,04;0,12;0,37;0,08;0,26;0,04;0,01;1384;0,11;0,13;0,01;2,67;GrupoRN
+124;Rwanda;3496;0,29;0,06;0,38;0,03;0,15;0,00;0,01;0;0,07;0,73;0,00;2,35;Grupo0
+125;Sao Tome and Principe;10459;0,12;0,07;0,43;0,02;0,00;0,00;0,00;0;0,03;0,51;0,01;2,44;Grupo2
+126;Saudi Arabia;128512;0,03;0,13;0,50;0,11;0,31;0,08;0,00;7788;0,27;0,81;0,00;3,11;GrupoRN
+127;Senegal;7701;0,15;0,11;0,55;0,07;0,29;0,01;0,01;0;0,05;0,46;0,00;2,33;Grupo2
+128;Serbia;28825;0,06;0,16;0,89;0,16;0,50;0,00;0,00;63;0,01;0,40;0,00;2,79;Grupo2
+129;Sierra Leone;4286;0,58;0,02;0,43;0,05;0,25;0,00;0,00;0;0,22;0,55;0,00;1,79;Grupo0
+130;Singapore;145489;0,00;0,18;2,03;0,71;1,68;0,08;0,01;0;0,00;0,01;0,35;4,06;GrupoNC
+131;Slovakia;63275;0,03;0,20;1,71;0,44;0,95;0,01;0,01;1;0,00;0,40;0,04;3,13;Grupo2
+132;Slovenia;66681;0,02;0,20;1,42;0,50;0,78;0,02;0,02;0;0,00;0,31;0,04;3,21;Grupo2
+133;Solomon Islands;4866;0,00;0,00;0,72;0,34;0,00;0,00;0,00;0;0,20;0,04;0,01;2,39;Grupo0
+134;Somalia;3175;0,00;0,00;0,00;0,00;0,15;0,00;0,00;0;0,18;0,70;0,00;1,64;Grupo0
+135;South Africa;43002;0,02;0,12;0,56;0,08;0,31;0,01;0,02;1;0,05;0,80;0,00;3,63;Grupo4
+136;Spain;83754;0,03;0,13;0,49;0,15;0,33;0,01;0,00;1;0,00;0,53;0,01;3,72;Grupo4
+137;Sudan;18334;0,31;0,00;0,12;0,02;0,10;0,00;0,00;97;0,05;0,29;0,00;2,26;Grupo1
+138;Sweden;95091;0,01;0,14;0,54;0,28;0,44;0,02;0,01;0;0,00;0,07;0,04;4,09;Grupo5
+139;Switzerland;101620;0,01;0,18;0,86;0,61;0,66;0,01;0,01;0;0,00;0,38;0,17;3,93;Grupo4
+140;Syria;6388;0,00;0,00;0,00;0,06;0,00;0,00;0,00;60;0,00;0,76;0,00;1,90;Grupo0
+141;Tajikistan;8064;0,20;0,10;0,57;0,03;0,13;0,00;0,00;1;0,03;0,34;0,00;2,06;Grupo0
+142;Tanzania;5600;0,29;0,05;0,30;0,04;0,20;0,00;0,00;0;0,07;0,45;0,00;2,53;Grupo0
+143;Thailand;27885;0,09;0,27;0,99;0,20;0,68;0,01;0,00;66;0,01;0,43;0,04;3,14;Grupo3
+144;Togo;3115;0,41;0,05;0,75;0,10;0,43;0,00;0,01;0;0,20;0,70;0,00;2,34;Grupo0
+145;Trinidad and Tobago;61722;0,00;0,17;0,70;0,18;0,00;0,00;0,00;1062;0,07;0,11;0,00;2,28;GrupoRN
+146;Tunisia;35540;0,09;0,15;0,79;0,09;0,40;0,01;0,00;119;0,03;0,65;0,01;2,62;Grupo1
+147;Turkey;68675;0,06;0,17;0,39;0,07;0,22;0,00;0,00;16;0,00;0,50;0,00;3,43;Grupo3
+148;Turkmenistan;35841;0,00;0,00;0,39;0,08;0,00;0,00;0,00;900;0,17;0,72;0,00;2,17;GrupoRN
+149;Uganda;4758;0,24;0,09;0,30;0,03;0,19;0,00;0,00;0;0,15;0,72;0,00;2,76;Grupo0
+150;Ukraine;17600;0,12;0,12;0,81;0,10;0,49;0,00;0,01;15;0,04;0,71;0,00;2,71;Grupo2
+151;United Arab Emirates;98608;0,01;0,09;1,60;0,47;1,01;0,10;0,02;4841;0,15;0,05;0,01;3,65;Grupo3
+152;United Kingdom;79378;0,01;0,09;0,39;0,15;0,28;0,01;0,01;277;0,00;0,71;0,03;3,98;Grupo5
+153;United States;111587;0,01;0,12;0,20;0,08;0,12;0,01;0,00;544;0,00;0,44;0,02;3,97;Grupo4
+154;Uruguay;42706;0,06;0,13;0,29;0,09;0,21;0,00;0,00;0;0,02;0,83;0,01;2,79;Grupo2
+155;Uzbekistan;14038;0,16;0,00;0,31;0,04;0,19;0,00;0,00;35;0,11;0,63;0,00;2,41;Grupo2
+156;Venezuela;32455;0,00;0,00;0,00;0,05;0,00;0,00;0,00;1572;0,00;0,24;0,00;2,49;GrupoRN
+157;Vietnam;9912;0,16;0,14;1,71;0,31;0,94;0,01;0,00;53;0,02;0,38;0,00;2,89;Grupo3
+158;Yemen;11882;0,16;0,18;0,40;0,01;0,04;0,00;0,00;35;0,01;0,45;0,00;2,18;Grupo0
+159;Zambia;9575;0,06;0,08;0,67;0,10;0,35;0,00;0,00;0;0,15;0,32;0,00;1,72;Grupo0
+160;Zimbabwe;4011;0,10;0,08;0,42;0,10;0,25;0,00;0,03;0;0,09;0,42;0,01;2,30;Grupo0
+;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;
+
+
+## Referencias
+
+```{r}
+# Referencias
+```
+
